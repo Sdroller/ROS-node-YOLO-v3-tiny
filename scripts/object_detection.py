@@ -16,41 +16,38 @@ from cv_bridge import CvBridge
 
 
 class ObjectDetection:
-	yolo = None
-	config = None
-        bridge = None
+    yolo = None
+    config = None
+    bridge = None
 
-	def __init__(self):
+    def __init__(self):
 
-		rospy.init_node('object_detection_node')
+        rospy.init_node('object_detection_node')
 
-		rospack = rospkg.RosPack()
-		path = rospack.get_path('object_detection')
+        rospack = rospkg.RosPack()
+        path = rospack.get_path('object_detection')
 
-		#Load config	
-		object_detection_config = rospy.get_param("/object_detection_config")
-		self.config = yaml.load(object_detection_config)
+        # Load config
+        object_detection_config = rospy.get_param("/object_detection_config")
+        self.config = yaml.load(open(object_detection_config))
 
-		self.yolo = YOLO(path+self.config['classification']['model'], path+self.config['classification']['anchors'], path+self.config['classification']['classes'])
-		self.bridge = CvBridge()
-        	
-		#change the camera topic if it is different
-		rospy.Subscriber('/camera/color/image_raw', Image, self.classify)
-        	rospy.spin()
+        self.yolo = YOLO(path + self.config['classification']['model'], path + self.config['classification']['anchors'], path + self.config['classification']['classes'])
+        self.bridge = CvBridge()
 
+        # change the camera topic if it is different
+        # rospy.Subscriber('/camera/color/image_raw', Image, self.classify)
+        rospy.Subscriber('/cv_camera/image_raw', Image, self.classify)
+        rospy.spin()
 
-	
-	def classify(self, image):
-		img = self.bridge.imgmsg_to_cv2(image, "bgr8")
-		img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB) 
-		scores, classes, img_ret = self.yolo.detect_image(img)
-		print(classes)
-		
+    def classify(self, image):
+        img = self.bridge.imgmsg_to_cv2(image, "bgr8")
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        scores, classes, img_ret = self.yolo.detect_image(img)
+        print(classes)
 
 
 if __name__ == '__main__':
     try:
         ObjectDetection()
     except rospy.ROSInterruptException:
-	rospy.logerr('Could not start object detection node.')
-
+        rospy.logerr('Could not start object detection node.')

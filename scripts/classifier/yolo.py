@@ -26,7 +26,7 @@ gpu_num=1
 
 class YOLO(object):
     def __init__(self, model, anchors, classes):
-        
+
 	self.model_path = model
         self.anchors_path = anchors
         self.classes_path = classes
@@ -35,7 +35,7 @@ class YOLO(object):
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
         #config = tf.ConfigProto()
-	#config.gpu_options.allow_growth = True 
+	#config.gpu_options.allow_growth = True
 
 	config = tf.ConfigProto()
 	config.gpu_options.per_process_gpu_memory_fraction = 0.3
@@ -46,7 +46,7 @@ class YOLO(object):
 	self.model_image_size = (416, 416) # fixed size or (None, None), hw
         self.boxes, self.scores, self.classes = self.generate()
         self.graph = tf.get_default_graph()
-        
+
 
     def _get_class(self):
         classes_path = os.path.expanduser(self.classes_path)
@@ -114,8 +114,9 @@ class YOLO(object):
                               image.height - (image.height % 32))
             boxed_image = letterbox_image(image, new_image_size)
         image_data = np.array(boxed_image, dtype='float32')
+        image_data2 = image_data.copy()
 
-        #print(image_data.shape)
+        # print(image_data.shape)
         image_data /= 255.
         image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
         with self.graph.as_default():
@@ -129,10 +130,10 @@ class YOLO(object):
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
 
-        return out_scores, out_classes, image
-        '''
-        font = ImageFont.truetype(font='font/FiraMono-Medium.otf',
-                    size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
+        image = Image.fromarray(image_data2, 'RGB')
+        size=np.floor(3e-2 * image.size[1] + 0.5)
+        size=size.astype('int32')
+        font = ImageFont.truetype(font='/usr/share/fonts/truetype/roboto/hinted/Roboto-Regular.ttf', size=size )
         thickness = (image.size[0] + image.size[1]) // 300
 
         for i, c in reversed(list(enumerate(out_classes))):
@@ -168,8 +169,9 @@ class YOLO(object):
             del draw
 
         end = timer()
-        print(end - start)
-        return image'''
+        print('%0.2f FPS'%(1/(end - start)))
+        # return image
+        return out_scores, out_classes, image
 
     def close_session(self):
         self.sess.close()
