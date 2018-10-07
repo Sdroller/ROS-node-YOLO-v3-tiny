@@ -123,10 +123,11 @@ class YOLO(object):
     		[self.boxes, self.scores, self.classes],
     		feed_dict={
     		    self.yolo_model.input: image_data,
-    		    self.input_image_shape: [image.shape[1], image.shape[0]],
+    		    self.input_image_shape: [image.shape[0], image.shape[1]],
     		    K.learning_phase(): 1
     		})
 
+        # Print info and Draw Rectangles around detected objects    
         print('\nFound {} boxes for {}'.format(len(out_boxes), 'img'))
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
@@ -134,74 +135,19 @@ class YOLO(object):
             score = out_scores[i]
 
             label = '{} {:.2f}'.format(predicted_class, score)
-            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 4, 2 )
 
             top, left, bottom, right = box
             top = max(0, np.floor(top + 0.5).astype('int32'))
             left = max(0, np.floor(left + 0.5).astype('int32'))
-            bottom = min(image.shape[1], np.floor(bottom + 0.5).astype('int32'))
-            right = min(image.shape[0], np.floor(right + 0.5).astype('int32'))
-            print(label, (left, top), (right, bottom))
+            bottom = min(image.shape[0], np.floor(bottom + 0.5).astype('int32'))
+            right = min(image.shape[1], np.floor(right + 0.5).astype('int32'))
+            print(label, (left,top), (right,bottom))
 
-            if top - label_size[1] >= 0:
-                # text_origin = np.array([left, top - label_size[1]])
-                text_origin = (left, top - label_size[1])
-            else:
-                # text_origin = np.array([left, top + 1])
-                text_origin = (left, top + 1)
+            text_origin = (left+5, top+12)
 
-            cv2.rectangle(image,(left,top),(right,bottom), (255,0,0), 2)
-            cv2.putText(image, label, text_origin, cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0))
-        '''
-        for i in range(len(boxes)):
-            # Class 1 represents human
-            threshold = 0.2
-            if classes[i] == 0 and scores[i] > threshold:
-                box = boxes[i]
-                cv2.rectangle(img_ret,(box[1],box[0]),(box[3],box[2]),(255,0,0),2)
-        '''
-        '''
-        image = Image.fromarray(image, 'RGB')
-        size=np.floor(3e-2 * image.size[1] + 0.5)
-        size=size.astype('int32')
-        font = ImageFont.truetype(font='/usr/share/fonts/truetype/roboto/hinted/Roboto-Regular.ttf', size=size )
-        thickness = (image.size[0] + image.size[1]) // 300
+            cv2.rectangle(image,(left,top), (right,bottom), (255,0,0), 2)
+            cv2.putText(image, label, text_origin, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
 
-        for i, c in reversed(list(enumerate(out_classes))):
-            predicted_class = self.class_names[c]
-            box = out_boxes[i]
-            score = out_scores[i]
-
-            label = '{} {:.2f}'.format(predicted_class, score)
-            draw = ImageDraw.Draw(image)
-            label_size = draw.textsize(label, font)
-
-            top, left, bottom, right = box
-            top = max(0, np.floor(top + 0.5).astype('int32'))
-            left = max(0, np.floor(left + 0.5).astype('int32'))
-            bottom = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
-            right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
-            print(label, (left, top), (right, bottom))
-
-            if top - label_size[1] >= 0:
-                text_origin = np.array([left, top - label_size[1]])
-            else:
-                text_origin = np.array([left, top + 1])
-
-            # My kingdom for a good redistributable image drawing library.
-            for i in range(thickness):
-                draw.rectangle(
-                    [left + i, top + i, right - i, bottom - i],
-                    outline=self.colors[c])
-            draw.rectangle(
-                [tuple(text_origin), tuple(text_origin + label_size)],
-                fill=self.colors[c])
-            draw.text(text_origin, label, fill=(0, 0, 0), font=font)
-            del draw
-
-        return image
-        open_cv_image = cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
-        '''
         end = timer()
         print('%0.2f FPS'%(1/(end - start)))
 

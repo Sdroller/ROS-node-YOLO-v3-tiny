@@ -19,6 +19,8 @@ class ObjectDetection:
     yolo = None
     config = None
     bridge = None
+    topic_camera_input = '/123fcv_camera/image_raw'
+    topic_yolo_output_img = '123yolo_output_img'
 
     def __init__(self):
 
@@ -34,12 +36,13 @@ class ObjectDetection:
         self.yolo = YOLO(path + self.config['classification']['model'], path + self.config['classification']['anchors'], path + self.config['classification']['classes'])
         self.bridge = CvBridge()
 
-        # change the camera topic if it is different
-        # rospy.Subscriber('/camera/color/image_raw', Image, self.classify)
-        rospy.Subscriber('/cv_camera/image_raw', Image, self.classify)
+        # Subscribers
+        self.topic_camera_input = self.config['topics']['topic_camera_input']
+        self.topic_yolo_output_img = self.config['topics']['topic_yolo_output_img']
+        rospy.Subscriber(self.topic_camera_input, Image, self.classify)
 
-        topic_yolo_output_img = 'yolo_output_img'
-        self.img_pub = rospy.Publisher(topic_yolo_output_img, Image, queue_size=10)
+        # Publish the image with detection boxes drawn
+        self.img_pub = rospy.Publisher(self.topic_yolo_output_img, Image, queue_size=10)
 
         rospy.spin()
 

@@ -2,3 +2,7 @@ classification:
   model:        '/scripts/classifier/model/yolov3-tiny.h5'
   anchors:      '/scripts/classifier/model/tiny_yolo_anchors.txt'
   classes:      '/scripts/classifier/model/coco_classes.txt'
+
+topics:
+  topic_camera_input: '/cv_camera/image_raw'
+  topic_yolo_output_img: '/yolo_output_img'
