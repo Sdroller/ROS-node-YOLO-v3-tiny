@@ -37,13 +37,20 @@ class ObjectDetection:
         # change the camera topic if it is different
         # rospy.Subscriber('/camera/color/image_raw', Image, self.classify)
         rospy.Subscriber('/cv_camera/image_raw', Image, self.classify)
+
+        topic_yolo_output_img = 'yolo_output_img'
+        self.img_pub = rospy.Publisher(topic_yolo_output_img, Image, queue_size=10)
+
         rospy.spin()
 
     def classify(self, image):
         img = self.bridge.imgmsg_to_cv2(image, "bgr8")
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        scores, classes, img_ret = self.yolo.detect_image(img)
-        print(classes)
+        boxes, scores, classes, img_ret = self.yolo.detect_image(img)
+
+        # Publish output Img
+        img_ret_ros = self.bridge.cv2_to_imgmsg(img_ret, encoding="rgb8")
+        self.img_pub.publish(img_ret_ros)
 
 
 if __name__ == '__main__':
