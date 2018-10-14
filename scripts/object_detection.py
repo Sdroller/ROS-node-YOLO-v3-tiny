@@ -23,9 +23,6 @@ class ObjectDetection:
     topic_yolo_output_img = '123yolo_output_img'
 
     def __init__(self):
-
-        rospy.init_node('object_detection_node')
-
         rospack = rospkg.RosPack()
         path = rospack.get_path('object_detection')
 
@@ -39,13 +36,12 @@ class ObjectDetection:
         # Subscribers
         self.topic_camera_input = self.config['topics']['topic_camera_input']
         self.topic_yolo_output_img = self.config['topics']['topic_yolo_output_img']
-	#https://stackoverflow.com/questions/26415699/ros-subscriber-not-up-to-date/29160379#29160379
+	    # https://stackoverflow.com/questions/26415699/ros-subscriber-not-up-to-date/29160379#29160379
         rospy.Subscriber(self.topic_camera_input, Image, self.classify, queue_size=1, buff_size=16777216)
 
         # Publish the image with detection boxes drawn
         self.img_pub = rospy.Publisher(self.topic_yolo_output_img, Image, queue_size=1)
 
-        rospy.spin()
 
     def classify(self, image):
         img = self.bridge.imgmsg_to_cv2(image, "bgr8")
@@ -57,8 +53,16 @@ class ObjectDetection:
         self.img_pub.publish(img_ret_ros)
 
 
-if __name__ == '__main__':
+def main(args):
+    rospy.init_node('object_detection_node')
+
+    yolo = ObjectDetection()
+    
     try:
-        ObjectDetection()
+        # spin() simply keeps python from exiting until this node is stopped
+        rospy.spin()
     except rospy.ROSInterruptException:
-        rospy.logerr('Could not start object detection node.')
+        pass
+
+if __name__ == '__main__':
+    main(sys.argv)
