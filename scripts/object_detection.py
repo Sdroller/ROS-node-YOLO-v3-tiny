@@ -14,7 +14,7 @@ from classifier.yolo import YOLO
 import rospkg
 import yaml
 from cv_bridge import CvBridge
-
+from sdroller_tracker.msg import bbox_array, bbox
 
 class ObjectDetection:
     yolo = None
@@ -26,6 +26,17 @@ class ObjectDetection:
     def __init__(self):
         rospack = rospkg.RosPack()
         path = rospack.get_path('object_detection')
+
+        # Test custom msg
+        msg_yolov3 = bbox()
+        msg_yolov3_arr = bbox_array()
+        msg_yolov3.Class = 'yo!';
+        msg_yolov3.prob = 0.5;
+        msg_yolov3.xmin = 4;
+        msg_yolov3.ymin = 3;
+        msg_yolov3.xmax = 2;
+        msg_yolov3.ymax = 1;
+        msg_yolov3_arr.bboxes.append(bbox_result);
 
         # Load config
         object_detection_config = rospy.get_param("/object_detection_config")
