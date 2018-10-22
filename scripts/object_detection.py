@@ -36,7 +36,7 @@ class ObjectDetection:
 
         # Subscribers
         self.topic_camera_input = self.config['topics']['topic_camera_input']
-	# https://stackoverflow.com/questions/26415699/ros-subscriber-not-up-to-date/29160379#29160379
+	    # https://stackoverflow.com/questions/26415699/ros-subscriber-not-up-to-date/29160379#29160379
         rospy.Subscriber(self.topic_camera_input, Image, self.classify, queue_size=1, buff_size=16777216)
 
         # Publish the image with detection boxes drawn
@@ -58,7 +58,7 @@ def main(args):
     rospy.init_node('object_detection_node')
 
     yolo = ObjectDetection()
-    
+
     try:
         # spin() simply keeps python from exiting until this node is stopped
         rospy.spin()
