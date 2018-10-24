@@ -5,6 +5,3 @@ classification:
   anchors:      '/scripts/classifier/model/yolo_anchors.txt'
   classes:      '/scripts/classifier/model/coco_classes.txt'
 
-topics:
-  topic_camera_input: '/zed/rgb/image_rect_color'
-  topic_yolo_output_img: '/yolo_output_img'
