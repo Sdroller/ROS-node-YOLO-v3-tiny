@@ -65,6 +65,7 @@ class ObjectDetection():
             msg_yolov3.ymax = _box[3]
             msg_yolov3_arr.bboxes.append(msg_yolov3)
 
+        msg_yolov3_arr.header.stamp = rospy.Time.now()
         self.bbox_pub.publish(msg_yolov3_arr)
 
 
