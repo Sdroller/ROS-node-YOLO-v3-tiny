@@ -57,7 +57,7 @@ class ObjectDetection():
         msg_yolov3_arr = bbox_array()
         for _box, _score, _class in zip(boxes, scores, classes):
             msg_yolov3 = bbox()
-            msg_yolov3.Class = str(_class)
+            msg_yolov3.Class = self.yolo.class_names[_class]
             msg_yolov3.prob = _score
             msg_yolov3.xmin = _box[0]
             msg_yolov3.ymin = _box[1]
