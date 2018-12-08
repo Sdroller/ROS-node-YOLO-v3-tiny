@@ -20,31 +20,46 @@ from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
 import os
 import rospkg
+from object_detection.msg import bbox_array, bbox
+import rospy
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 #from keras.utils import multi_gpu_model
-gpu_num=1
+gpu_num = 1
+
 
 class YOLO(object):
     def __init__(self, model, anchors, classes):
-
-	self.model_path = model
+        self.model_path = model
         self.anchors_path = anchors
         self.classes_path = classes
         self.score = 0.3
         self.iou = 0.45
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
-        #config = tf.ConfigProto()
-	#config.gpu_options.allow_growth = True
 
-	config = tf.ConfigProto()
-	config.gpu_options.per_process_gpu_memory_fraction = 0.3
-	set_session(tf.Session(config=config))
-        #self.sess = tf.Session(config=config)
-	self.sess = K.get_session()
-        #K.set_session(self.sess)
-	self.model_image_size = (416, 416) # fixed size or (None, None), hw
+        '''Control amount of memory used by YOLO. TX2 has shared memory between CPU and GPU.
+        By default, TensorFlow maps nearly all of the GPU memory of all GPUs. It is desirable for the process to only
+        allocate a subset of the available memory, or to only grow the memory usage as is needed by the process.
+        TensorFlow provides two Config options on the Session to control this:
+
+          - gpu_options.allow_growth: attempts to allocate only as much GPU memory based on runtime allocations.
+                                      Note that there is a known error with this method as of Jetpack 3.3 (CUDA 9):
+                                      It still takes a large chunk of memory (~4GB) instead of a small amount as needed.
+
+          - gpu_options.per_process_gpu_memory_fraction: the fraction of the overall amount of memory that each visible
+                                                         GPU should be allocated.
+        '''
+        config = tf.ConfigProto()
+        # config.gpu_options.allow_growth = True
+        config.gpu_options.per_process_gpu_memory_fraction = 0.2
+
+        self.sess = tf.Session(config=config)
+        K.set_session(self.sess)
+        # set_session(tf.Session(config=config))
+        # self.sess = K.get_session()
+
+        self.model_image_size = (320, 320)  # fixed size or (None, None), hw
         self.boxes, self.scores, self.classes = self.generate()
         self.graph = tf.get_default_graph()
 
@@ -70,16 +85,16 @@ class YOLO(object):
         # Load model, or construct model and load weights.
         num_anchors = len(self.anchors)
         num_classes = len(self.class_names)
-        is_tiny_version = num_anchors==6 # default setting
+        is_tiny_version = num_anchors == 6  # default setting
         try:
             self.yolo_model = load_model(model_path, compile=False)
         except:
-            self.yolo_model = tiny_yolo_body(Input(shape=(None,None,3)), num_anchors//2, num_classes) \
-                if is_tiny_version else yolo_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
-            self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
+            self.yolo_model = tiny_yolo_body(Input(shape=(None, None, 3)), num_anchors // 2, num_classes) \
+                if is_tiny_version else yolo_body(Input(shape=(None, None, 3)), num_anchors // 3, num_classes)
+            self.yolo_model.load_weights(self.model_path)  # make sure model, anchors and classes match
         else:
             assert self.yolo_model.layers[-1].output_shape[-1] == \
-                num_anchors/len(self.yolo_model.output) * (num_classes + 5), \
+                num_anchors / len(self.yolo_model.output) * (num_classes + 5), \
                 'Mismatch between model and given anchor and class sizes'
 
         print('{} model, anchors, and classes loaded.'.format(model_path))
@@ -97,18 +112,18 @@ class YOLO(object):
 
         # Generate output tensor targets for filtered bounding boxes.
         self.input_image_shape = K.placeholder(shape=(2, ))
-        #if gpu_num>=2:
+        # if gpu_num>=2:
         #    self.yolo_model = multi_gpu_model(self.yolo_model, gpus=gpu_num)
         boxes, scores, classes = yolo_eval(self.yolo_model.output, self.anchors,
-                len(self.class_names), self.input_image_shape,
-                score_threshold=self.score, iou_threshold=self.iou)
+                                           len(self.class_names), self.input_image_shape,
+                                           score_threshold=self.score, iou_threshold=self.iou)
         return boxes, scores, classes
 
     def detect_image(self, image):
         start = timer()
         if self.model_image_size != (None, None):
-            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
-            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[0] % 32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[1] % 32 == 0, 'Multiples of 32 required'
             boxed_image = letterbox_image(image, tuple(reversed(self.model_image_size)))
         else:
             new_image_size = (image.width - (image.width % 32),
@@ -119,42 +134,60 @@ class YOLO(object):
         image_data /= 255.
         image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
         with self.graph.as_default():
-    	    out_boxes, out_scores, out_classes = self.sess.run(
-    		[self.boxes, self.scores, self.classes],
-    		feed_dict={
-    		    self.yolo_model.input: image_data,
-    		    self.input_image_shape: [image.shape[0], image.shape[1]],
-    		    K.learning_phase(): 1
-    		})
+            out_boxes, out_scores, out_classes = self.sess.run(
+                [self.boxes, self.scores, self.classes],
+                feed_dict={
+                    self.yolo_model.input: image_data,
+                    self.input_image_shape: [image.shape[0], image.shape[1]],
+                    K.learning_phase(): 1
+                })
 
-        # Print info and Draw Rectangles around detected objects    
+        # Create an array of all bounding boxes to be published later
+        msg_yolov3_arr = bbox_array()
+        msg_yolov3_arr.header.stamp = rospy.Time.now()
+
+        # Print info and Draw Rectangles around detected objects
         print('\nFound {} boxes for {}'.format(len(out_boxes), 'img'))
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
             box = out_boxes[i]
             score = out_scores[i]
 
-            label = '{} {:.2f}'.format(predicted_class, score)
-
-            top, left, bottom, right = box
+            top, left, bottom, right = box # Note in image, ymin is at the top of image
             top = max(0, np.floor(top + 0.5).astype('int32'))
             left = max(0, np.floor(left + 0.5).astype('int32'))
             bottom = min(image.shape[0], np.floor(bottom + 0.5).astype('int32'))
             right = min(image.shape[1], np.floor(right + 0.5).astype('int32'))
-            print(label, (left,top), (right,bottom))
 
-            text_origin = (left+5, top+12)
+            # Print details of each detected object
+            label = '{} {:.2f}'.format(predicted_class, score)
+            print(label, (left, top), (right, bottom))
 
-            cv2.rectangle(image,(left,top), (right,bottom), (255,0,0), 2)
-            cv2.putText(image, label, text_origin, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
+            # Add rectangles with label to detected objects in image for visualization
+            text_origin = (left + 5, top + 12)
+            cv2.rectangle(image, (left, top), (right, bottom), (255, 0, 0), 2)
+            cv2.putText(image, label, text_origin, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+
+            # Fill the bbox array
+            msg_yolov3 = bbox()
+            msg_yolov3.Class = predicted_class
+            msg_yolov3.prob = score
+            msg_yolov3.xmin = left
+            msg_yolov3.ymin = top
+            msg_yolov3.xmax = right
+            msg_yolov3.ymax = bottom
+            msg_yolov3_arr.bboxes.append(msg_yolov3)
+
 
         end = timer()
-        print('%0.2f FPS'%(1/(end - start)))
+        print('%0.2f FPS' % (1 / (end - start)))
 
-        return out_boxes, out_scores, out_classes, image
+        return image, msg_yolov3_arr
+
 
     def close_session(self):
         self.sess.close()
+
 
 def detect_img(yolo):
     while True:
@@ -168,4 +201,3 @@ def detect_img(yolo):
             r_image = yolo.detect_image(image)
             r_image.show()
     yolo.close_session()
-

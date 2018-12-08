@@ -47,26 +47,14 @@ class ObjectDetection():
     def classify(self, image):
         img = self.bridge.imgmsg_to_cv2(image, "bgr8")
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        boxes, scores, classes, img_ret = self.yolo.detect_image(img)
+        img_ret, bbox_arr_ret = self.yolo.detect_image(img)
 
         # Publish output Img
         img_ret_ros = self.bridge.cv2_to_imgmsg(img_ret, encoding="rgb8")
         self.img_pub.publish(img_ret_ros)
 
-        # Publish Bounding Boxes and Probabilities
-        msg_yolov3_arr = bbox_array()
-        for _box, _score, _class in zip(boxes, scores, classes):
-            msg_yolov3 = bbox()
-            msg_yolov3.Class = self.yolo.class_names[_class]
-            msg_yolov3.prob = _score
-            msg_yolov3.xmin = _box[0]
-            msg_yolov3.ymin = _box[1]
-            msg_yolov3.xmax = _box[2]
-            msg_yolov3.ymax = _box[3]
-            msg_yolov3_arr.bboxes.append(msg_yolov3)
-
-        msg_yolov3_arr.header.stamp = rospy.Time.now()
-        self.bbox_pub.publish(msg_yolov3_arr)
+        # Publish bbox array
+        self.bbox_pub.publish(bbox_arr_ret)
 
 
 
