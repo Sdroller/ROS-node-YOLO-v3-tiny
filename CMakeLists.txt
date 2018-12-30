@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(object_detection)
+project(sdroller_track_detect)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -25,11 +25,12 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS message_runtime
+  CATKIN_DEPENDS rospy message_runtime
 )
 
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 

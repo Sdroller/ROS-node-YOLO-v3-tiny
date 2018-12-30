@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>object_detection</name>
+  <name>sdroller_track_detect</name>
   <version>0.0.0</version>
-  <description>The object_detection package</description>
+  <description>Object detection and tracking to track a person behind vehicle</description>
 
   <maintainer email="nvidia@todo.todo">nvidia</maintainer>
 

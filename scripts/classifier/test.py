@@ -4,4 +4,4 @@ import rospkg
 rospack = rospkg.RosPack()
 
 # get the file path for rospy_tutorials
-rospack.get_path('object_detection')
+rospack.get_path('sdroller_track_detect')

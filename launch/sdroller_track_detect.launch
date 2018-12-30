@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+	<param name="/object_detection_config" value="$(find sdroller_track_detect)/config/object_detection.yaml"/>
+	<!-- <rosparam param="/object_detection_config" file="$(find sdroller_track_detect)/config/object_detection.yaml" command="load" /> -->
+
+	<group ns="yolo">
+		<node pkg="sdroller_track_detect" type="object_detection_main.py" name="sdroller_track_detect" output="screen">
+			<remap from="/camera/image_raw" to="/zed/rgb/image_rect_color"/>
+		</node>
+	</group>
+
+</launch>

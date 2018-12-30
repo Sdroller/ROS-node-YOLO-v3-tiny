@@ -59,7 +59,7 @@ class YOLO(object):
         # set_session(tf.Session(config=config))
         # self.sess = K.get_session()
 
-        self.model_image_size = (320, 320)  # fixed size or (None, None), hw
+        self.model_image_size = (288, 288) #(320, 320)  # fixed size or (None, None), hw
         self.boxes, self.scores, self.classes = self.generate()
         self.graph = tf.get_default_graph()
 
@@ -97,7 +97,7 @@ class YOLO(object):
                 num_anchors / len(self.yolo_model.output) * (num_classes + 5), \
                 'Mismatch between model and given anchor and class sizes'
 
-        print('{} model, anchors, and classes loaded.'.format(model_path))
+        rospy.loginfo('{} model, anchors, and classes loaded.'.format(model_path))
 
         # Generate colors for drawing bounding boxes.
         hsv_tuples = [(x / len(self.class_names), 1., 1.)
@@ -147,7 +147,7 @@ class YOLO(object):
         msg_yolov3_arr.header.stamp = rospy.Time.now()
 
         # Print info and Draw Rectangles around detected objects
-        print('\nFound {} boxes for {}'.format(len(out_boxes), 'img'))
+        str_info = '\n  YOLO detected {} boxes within img:'.format(len(out_boxes))
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
             box = out_boxes[i]
@@ -159,14 +159,15 @@ class YOLO(object):
             bottom = min(image.shape[0], np.floor(bottom + 0.5).astype('int32'))
             right = min(image.shape[1], np.floor(right + 0.5).astype('int32'))
 
-            # Print details of each detected object
-            label = '{} {:.2f}'.format(predicted_class, score)
-            print(label, (left, top), (right, bottom))
+            # For printing details of each detected object later
+            str_info = str_info + ('\n    class: {},\t confidence: {:.2f},\t bbox: [({}, {}), ({}, {})]'.format(
+                                    predicted_class, score, left, top, right, bottom))
 
             # Add rectangles with label to detected objects in image for visualization
             text_origin = (left + 5, top + 12)
             cv2.rectangle(image, (left, top), (right, bottom), (255, 0, 0), 2)
-            cv2.putText(image, label, text_origin, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+            label = '{}, {:.2f}'.format(predicted_class, score)
+            cv2.putText(image, label, text_origin, cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
 
             # Fill the bbox array
             msg_yolov3 = bbox()
@@ -178,9 +179,9 @@ class YOLO(object):
             msg_yolov3.ymax = bottom
             msg_yolov3_arr.bboxes.append(msg_yolov3)
 
-
         end = timer()
-        print('%0.2f FPS' % (1 / (end - start)))
+        str_info = str_info + '\n    YOLO FPS: %0.2f' % (1 / (end - start))
+        rospy.loginfo(str_info)
 
         return image, msg_yolov3_arr
 
@@ -195,7 +196,7 @@ def detect_img(yolo):
         try:
             image = Image.open(img)
         except:
-            print('Open Error! Try again!')
+            rospy.logerr('Could not open image file! Try again!')
             continue
         else:
             r_image = yolo.detect_image(image)
