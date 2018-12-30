@@ -11,7 +11,13 @@ There are several tunable parameters, like:
 ```
 
 ## Instructions to run
-To run this repo, make sure zed camera is publishing rgb and depth:
+Use the `tracking-test` branch of `sdroller_bringup`:
+```
+$ cd sdroller_bringup
+$ git checkout tracking-test
+```
+
+To run this repo, make sure zed camera is publishing rgb and depth. 
 ```
 $ roslaunch sdroller_bringup sdroller_bringup.launch
 ```
