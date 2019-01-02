@@ -45,7 +45,6 @@ class ObjectDetectionTracking():
         self.tracker_init_min_iou = 0.2  # This is used for first initialization of tracker only
         self.threshold_confidence = 0.4  # prob of class must be greater than this threshold for us to use it.
         self.tracker = None  # Object to store tracker: cv2.TrackerKCF_create() or cv2.TrackerMOSSE_create()
-        self.tracker_initialized = False
         self.fps = FPS().start()
 
         # Load yolo config
@@ -223,7 +222,7 @@ class ObjectDetectionTracking():
         '''The tracker's bbox will be centre of image at startup. Target must be inside this area to init tracker
         '''
 
-        if not self.tracker_initialized:
+        if self.tracker is None:
             # Draw the tracker_bbox and yolo_bbox_arr for visualization purposes.
             text_origin = (self.tracker_bbox.xmin + 10, self.tracker_bbox.ymin + 25)
             cv2.putText(self.rgb_img_output, 'Waiting to detect target...', text_origin,
@@ -247,9 +246,9 @@ class ObjectDetectionTracking():
                     rospy.loginfo('Initializing Tracker on New Target...')
                     success = self.initialize_tracker(input_img)
                     if success:
-                        self.tracker_initialized = True
                         rospy.loginfo('Target Acquired!!!')
                     else:
+                        self.tracker = None
                         rospy.logwarn('Could not initialize tracker from YOLO bbox')
 
         else:
