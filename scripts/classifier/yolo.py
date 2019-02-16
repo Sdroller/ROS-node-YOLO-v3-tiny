@@ -20,7 +20,7 @@ from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
 import os
 import rospkg
-from object_detection.msg import bbox_array, bbox
+from sdroller_track_detect.msg import bbox_array, bbox
 import rospy
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -141,7 +141,7 @@ class YOLO(object):
                     self.input_image_shape: [image.shape[0], image.shape[1]],
                     K.learning_phase(): 1
                 })
-
+        
         # Create an array of all bounding boxes to be published later
         msg_yolov3_arr = bbox_array()
         msg_yolov3_arr.header.stamp = rospy.Time.now()
@@ -177,6 +177,9 @@ class YOLO(object):
             msg_yolov3.ymin = top
             msg_yolov3.xmax = right
             msg_yolov3.ymax = bottom
+            msg_yolov3.depth = -1.0 # This indicates valid value hasn't been filled out
+            msg_yolov3.aspect_ratio = -1.0  # This indicates valid value hasn't been filled out
+            msg_yolov3.area_percentage = -1.0   # This indicates valid value hasn't been filled out
             msg_yolov3_arr.bboxes.append(msg_yolov3)
 
         end = timer()

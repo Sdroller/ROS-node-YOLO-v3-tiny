@@ -1,6 +1,22 @@
 classification:
-  # model:      '/scripts/classifier/model/YOLOv3-320.h5'
-  # anchors:    '/scripts/classifier/model/yolo_anchors.txt'
-  model:        '/scripts/classifier/model/yolov3-tiny.h5'
-  anchors:      '/scripts/classifier/model/tiny_yolo_anchors.txt'
-  classes:      '/scripts/classifier/model/coco_classes.txt'
+  model   : '/scripts/classifier/model/YOLOv3-320.h5'
+  anchors : '/scripts/classifier/model/yolo_anchors.txt'
+  # model   : '/scripts/classifier/model/yolov3-tiny.h5'
+  # anchors : '/scripts/classifier/model/tiny_yolo_anchors.txt'
+  classes : '/scripts/classifier/model/coco_classes.txt'
+
+topics:
+  topic_rgb_image:      '/zed/rgb/image_rect_color'
+  topic_depth_image:    '/zed/depth/depth_registered'  # Image: 32-bit depth values in meters
+  topic_yolo_output:    'yolo_output'
+  topic_tracker_output: 'tracker_output'
+
+tracker:
+  target_class        : 'person'  # The class to be tracked.
+  tracker_init_min_iou: 0.2       # Min IoU of target class with tracker's bbox. This is used for first initialization of tracker only
+  threshold_confidence: 0.4       # Min confidence of a detection for it to be considered a valid target
+  target_max_dist     : 2.0       # Max dist of target from camera in meters for it to be considered a valid target
+  min_aspect_ratio    : 0.3       # Min aspect_ratio of a target's bbox for it to be considered a valid target
+  max_aspect_ratio    : 2.0       # Max aspect_ratio of a target's bbox for it to be considered a valid target
+  min_area_percentage : 0.1       # The min area of the bbox, in terms of percentage of the area of img, for it to be considered a valid target
+  tracker_max_lost_count: 100     # The num of frames that the tracker does not find a valid target before determining the target is lost

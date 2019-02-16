@@ -4,3 +4,6 @@ uint32 xmin
 uint32 ymin
 uint32 xmax
 uint32 ymax
+float32 depth
+float32 aspect_ratio
+float32 area_percentage
